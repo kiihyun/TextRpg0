@@ -2,9 +2,120 @@
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Linq;
+using TextRpg;
+
+
+
+class Character
+{
+    public int Level { get; }
+    public string Name { get; }
+    public Job Job { get; }
+    public int Atk { get; }
+    public int Def { get; }
+    public int Hp { get; }
+    public int Gold { get; }
+
+    public int ExtraAtk { get; }
+    public int ExtraDef { get; }
+
+    private List<Item> Inventory = new List<Item>();
+    private List<Item> EquipLsit = new List<Item>();
+
+    public int InventoryCount
+    {
+        get
+        {
+            return Inventory.Count;
+        }
+    }
+    public Character(int level, string name, Job job, int attack, int defence, int hp, int gold)
+    {
+        Level = level;
+        Name = name;
+        Job = job;
+        Atk = attack;
+        Def = defence;
+        Hp = hp;
+        Gold = gold;
+    }
+
+    public void DisplayCharacterInfo()
+    {
+
+        Console.Clear();
+        Console.WriteLine("상태 보기\r\n캐릭터의 정보가 표시됩니다.\r\n\r\n");
+        Console.WriteLine($"Lv. {Level}");
+        Console.WriteLine($"{Name} ({Job})");
+        Console.WriteLine($"공격력 : {Atk} (+{ExtraAtk})");
+        Console.WriteLine($"방어력 : {Def} (+{ExtraDef})");
+        Console.WriteLine($"체력 : {Hp}");
+        Console.WriteLine($"Gold : {Gold} G");
+    }
+    public void DisplayInventory()
+    {
+        for (int i = 0; i < Inventory.Count; i++)
+        {
+            Item targetItem = Inventory[i];
+
+            bool displayEquipped = IsEquipped(targetItem);
+            Console.WriteLine($"{displayEquipped}{targetItem.ItemInfoText}");
+
+        }
+    }
+
+    public void DisplayEquipItem(Item item)
+    {
+
+    }
+    public bool IsEquipped(Item item)
+    {
+        return false;
+    }
+
+    public void BuyItem(Item item)
+    {
+
+    }
+    public bool HasItem(Item item)
+    {
+        return false;
+
+    }
+}
+
+class Item
+{
+    public string Name { get; }
+    public int Type { get; }
+    public int Value { get; }
+    public string Desc { get; }
+    public int Price { get; }
+    public string DisplayTypeText
+    {
+        get 
+        {
+            return Type == 0 ? "공격력 " : "방어력";
+        }
+    }
+
+    public Item(string name, int type, int value, string desc, int price)
+    {
+        Name = name;
+        Type = type;
+        Value = value;
+        Desc = desc;
+        Price = price;
+    }
+    public string ItemInfoText()
+    {
+        return $"{Name}   |   {DisplayTypeText} +{Value}  | {Desc}";
+    }
+}
 
 namespace TextRpg
 {
@@ -18,7 +129,8 @@ namespace TextRpg
         public int defence = 5;
         public int hp = 100;
         public int gold = 1500;
-
+        public int extraAtk;
+        public int extraDef;
         public Player(string name)
         {
             this.name = name;
@@ -144,6 +256,7 @@ namespace TextRpg
         public void PrintShopItems(Item[] items)
         {
             int index = 1;
+
             foreach (Item item in items)
             {
                 Console.Write($"{index}.");
@@ -357,56 +470,65 @@ namespace TextRpg
 
             private void ShowStart()
             {
+                Console.Clear();
+                Console.WriteLine("스파르타 마을에 오신 여러분 환영합니다.");
+                Console.Write("이곳에서 던전으로 들어가기전 활동을 할 수 있습니다.\r\n\r\n1. 상태 보기\r\n2. 인벤토리\r\n3. 상점\r\n");
+                Console.WriteLine("4. 던전입장");
+                Console.WriteLine("5. 휴식하기");
+                Console.WriteLine("6. 저장하기");
+                Console.WriteLine("7. 불러오기");
+                Console.WriteLine("\r\n원하시는 행동을 입력해주세요\r\n>>");
+                //if (!int.TryParse(Console.ReadLine(), out behavior))
+                //{
+                //    Console.WriteLine("숫자를 입력해주세요.");
+                //    Console.ReadKey();
+                //    continue;
+                //}
+
+                int result = CheckInput(1, 3);
+
+                switch (result)
+                {
+                    case 1:
+                        ShowInfo();
+                        break;
+                    case 2:
+                        ShowInventory();
+                        break;
+                    case 3:
+                        ShowShop();
+                        break;
+                    case 4:
+                        ShowDungeon();
+                        break;
+                    case 5:
+                        ShowRest();
+                        break;
+                    case 6:
+                        SaveSystem.SaveGame(player, inventory);
+                        break;
+                    case 7:
+                        SaveSystem.LoadGame(player, inventory);
+                        break;
+                }
+            }
+
+            private static int CheckInput(int min, int max)
+            {
+                int result;
                 while (true)
                 {
-                    Console.Clear();
-                    Console.WriteLine("스파르타 마을에 오신 여러분 환영합니다.");
-                    Console.Write("이곳에서 던전으로 들어가기전 활동을 할 수 있습니다.\r\n\r\n1. 상태 보기\r\n2. 인벤토리\r\n3. 상점\r\n");
-                    Console.WriteLine("4. 던전입장");
-                    Console.WriteLine("5. 휴식하기");
-                    Console.WriteLine("6. 저장하기");
-                    Console.WriteLine("7. 불러오기");
-                    Console.WriteLine("\r\n원하시는 행동을 입력해주세요\r\n>>");
-                    if (!int.TryParse(Console.ReadLine(), out behavior))
-                    {
-                        Console.WriteLine("숫자를 입력해주세요.");
-                        Console.ReadKey();
-                        continue;
-                    }
+                    string input = Console.ReadLine();
+                    bool isNumber = int.TryParse(input, out result);
 
-                    if (behavior == 1)
+                    if (isNumber)
                     {
-                        ShowInfo();
+                        if (result >= min && result <= max)
+                        {
+                            return result;
+                        }
                     }
-                    else if (behavior == 2)
-                    {
-                        ShowInventory();
-                    }
-                    else if (behavior == 3)
-                    {
-                        ShowShop();
-                    }
-                    else if (behavior == 4)
-                    {
-                        ShowDungeon();
-                    }
-                    else if (behavior == 5)
-                    {
-                        ShowRest();
-                    }
-                    else if (behavior == 6)
-                    {
-                        SaveSystem.SaveGame(player, inventory);
-                    }
-                    else if (behavior == 7)
-                    {
-                        SaveSystem.LoadGame(player, inventory);
-                    }
-                    else
-                    {
-                        Console.WriteLine("잘못된 입력입니다");
-                        Console.Read();
-                    }
+                    Console.WriteLine("잘못입력했습니다");
                 }
             }
 
